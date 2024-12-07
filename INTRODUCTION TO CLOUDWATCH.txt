@@ -1,0 +1,56 @@
+INTRODUCTION TO CLOUDWATCH
+
+CLOUDWATCH MONITORING
+-MONITORS ALL AWS RESOURCES PROVISIONED AND DEPLOYED
+-SENDS NOTIFICATION IF ANYTHING GOES WRONG
+
+DIMENSIONS AND STATISTICS
+*DIMENSIONS
+*STATISTICS:DATA AGGREGATION OVER A PERIOD OF TIME.
+
+METRICS AND NAMESPACES
+-METRICS ARE FUNDAMENTAL TO CLOUDWATCHMONITORING
+-INDIVIDUAL DATA POINTS WHICH AREMONITORED,ALL ACTIONS ARE BASED ON METRICS E.G. CPU UTILIZATION PERCENTAGE.
+-ALL AWS SERVICES SEND METRICS TO CLOUDWATCH BY DEFAULT.
+
+-------          -------->CPU    
+|EC2|---------->|-------->DISK
+-------          -------->N/W
+
+                 --------->CPU
+ELB------------>|--------->DISK  
+                 --------->N/W
+
+                 --------->CPU
+EBS------------>|--------->DISK
+                 --------->N/W
+
+                 --------->CPU
+ROUTE 53------->|--------->DISK
+                 --------->N/W
+
+
+RESOURCE METRICS-EC2
+
+
+CPU------------>CPU UTLIZATION
+                                          |-------->NETWORKIN(BYTES)
+                                          |
+    NETWORK---->NETWORK INTERFACE---------|-------->NETWORKOUT(BYTES)
+                                          |
+                                          |-------->NETWORKPACKETSIN(COUNT)
+                                          
+                                          |-------->NETWORKPACKETSOUT(COUNT)
+
+DISK----------->ATTACHED DISK  
+                 |        |\
+      DISKREADOPS(COUNT) DISKREADBYTES(BYTES)
+      DISKWRITEOPS(COUNT) DISKWRITEBYTES(BYTES)     (MIN,MAX,AVG)
+
+
+CLOUDWATCH DASBOARD
+
+DASHBOARDS ARE PAGES IN THE CONSOLE WHICH CAN BE USED TO PUT ALL THE IMPORTANT STATISTIC DEEMED IMPORTANT AT ONE PLACE.
+
+
+

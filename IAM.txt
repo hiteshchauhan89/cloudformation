@@ -1,0 +1,85 @@
+INTRODUCTION TO IAM
+-AWS IDENTITY AND ACCESS MANAGEMENT(IAM) IS A WEB SERVICE THAT HELPS YOU SECURELY CONTROL ACCESS TO AWS RESOURCES.
+-YOU USE IAM TO CONTROL WHO IS AUTHENTICATED(SIGNED IN) AND AUTHORIZED(HAS PERMISSION) TO USE RESOURCES.
+
+ARN(AMAZON RESOURCE NAME)
+AMAZON RESOURCE NAMES UNIQUELY IDENTIFY AWS RESOURCES.EVERY RESOURCE IN AWS IS PROVIDED WITH AN ARN.
+
+ARN FORMAT:
+arn:partition:service:region:account-id:resource
+
+arn:partition:service:region:account-id:resourcetype/resource
+
+arn:partition:service:region:account-id:resourcetype:resource
+
+EC2
+INSTANCE>arn:Aws:ec2:region:account-id:instance/instance-id
+
+AMI>arn:aws:ec2:region::image/image-id
+
+Key-pair>arn:aws:ec2:region:account-id:key-pair/key-pair-name
+
+N/W Interface>arn:aws:ec2:region:account-id:network-interface/eni-id
+
+EBS
+Volume>arn:aws:ec2:region:account-id:volume/volume-id
+
+Snapshot>arn:aws:ec2:region:account-id:snapshot/snapshot-id
+
+VPC>arn:Aws:ec2:region:account-id:vpc/vpc-id
+
+Route Table>arn:aws:ec2:region:account-id:route-table/route-table-id
+
+SG>arn:aws:ec2:region:account-id:security-group/security-group-id
+
+NACL>arn:aws:ec2:region:account-id:network-acl/nacl-id
+
+IGW>arn:aws:ec2:region:account-id:internet-gateway/igw-id
+
+SUBNET>arn:aws:ec2:region:account-id:subnet/subnet-id
+
+PEERING>arn:aws:ec2:region:account-id:vpc-peering-connection/peering-id
+
+IAM FEATURES
+-Represents an entity that is created in AWS can be a person or service.
+-No Permission by default.Nothin is allowed.
+-Access requirement
+ - Programmatic Access:User needs to make API calls from programs or uses CLI to access AWS resources.
+ - Management Console Access:User needs to access AWS resources from management console.
+
+IAM USERS
+-Access Keys
+-Max2 ACTIVE access keys at a time.
+-when diabaled access keys cannot be used to make CLI or API Calls.
+
+-Multi-Factor Authentication
+- secutiy token based
+- sms based
+
+IAM POLICIES
+-Policies are JSON documents which mention what an user or group can do on AWS resources.it defines the authorization paradigm for AWS resources.
+
+-Contains 3 components at the least(EAR):
+  -EFFECT:Whether ACTIONS are ALLOWED/DENIED on RESOURCES.
+  -ACTIONS:What actions are allowed or denied.e.g. create ec2 instance,delete S3 buckets,create security groups etc.all are different types of ACTIONS.
+  -RESOURCES:AWS resources like ec2 instances,ELB,S3 buckets or objects etc.denoted by ARN.
+
+-Policies can be attached to users or groups.
+
+-Resources based policies:when policies are attached to resources.
+ prinicipal:An entity that can take action on an aws resource
+
+group:Effect,Action,Resource:"S3"
+S3:   Effect,Action,
+      Resource:"S3"
+      Principal:"user-1"
+
+policy with a single statement
+"Version":"2012-10-17",
+"Statement":[
+ {
+   "Effect":"Allow",
+   "Action":"s3:ListBucket",
+   "Resource":"arn:aws:s3:::aws-foundation-bucket"
+ }
+]
