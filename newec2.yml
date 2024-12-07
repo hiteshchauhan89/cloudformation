@@ -1,0 +1,22 @@
+Parameters:
+  EC2InstanceType:
+    Description: Select Instance Type.
+    Type: String
+    Default: t2.micro
+      
+Ec2Instance: 
+  Type: AWS::EC2::Instance
+  Properties: 
+    ImageId: ami-063d43db0594b521b
+      
+    KeyName: 
+      Ref: cloudwatch logs
+    NetworkInterfaces: 
+      - AssociatePublicIpAddress: true
+        DeviceIndex: 0
+        GroupSet: 
+          - Ref: sg-0513f7b0108994883
+       
+
+
+       

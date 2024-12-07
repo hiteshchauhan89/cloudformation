@@ -1,0 +1,39 @@
+Parameters:
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t2.micro
+    ConstraintDescription: Must be a valid EC2 instance type.
+
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access to the instances
+    Type: String
+    Default: cloudwatch log
+
+Resources:
+  EC2Instances:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      ImageId: ami-0c55b159cbfafe01e # Example AMI ID, change to your preferred one
+      MinCount: 1
+      MaxCount: 100
+      TagSpecifications:
+        - ResourceType: instance
+          Tags:
+            - Key: Name
+              Value: !Sub MyEC2Instance-${AWS::StackName}-${AWS::Region}-${AWS::NoValue}
+            - Key: Environment
+              Value: !Ref Environment
+
+Outputs:
+  InstanceIds:
+    Description: The Instance IDs of the launched EC2 instances
+    Value: !Join
+      - ","
+      - - !Ref EC2Instances
+
+  InstanceCount:
+    Description: Total number of EC2 instances launched
+    Value: 100

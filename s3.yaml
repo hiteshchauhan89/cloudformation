@@ -1,0 +1,15 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Simple cloud formation for bucket creation and configuration
+
+Parameters:
+  BucketName: { Type: String, Default: "my-unique-bucket-name-1111" }
+
+Resources:  
+  HiteshBucket:
+    Type: "AWS::S3::Bucket"
+
+Outputs:
+  MainBucketName:
+    Description: Name of the main bucket
+    Value: !Ref BucketName
+  

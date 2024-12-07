@@ -1,0 +1,110 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudFormation Template for EC2 Instances and EFS
+
+Parameters:
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t2.small
+      - t2.medium
+    ConstraintDescription: Must be a valid EC2 instance type.
+
+Resources:
+  # Create the EFS
+  MyEFS:
+    Type: AWS::EFS::FileSystem:
+    Properties:
+      PerformanceMode: generalPurpose
+      Encrypted: true
+
+  MyEFSAccessPoint:
+    Type: AWS::EFS::AccessPoint
+    Properties:
+      FileSystemId: !Ref MyEFS
+      PosixUser:
+        Gid: "1000"
+        Uid: "1000"
+      RootDirectory:
+        CreationInfo:
+          OwnerGid: "1000"
+          OwnerUid: "1000"
+          Permissions: "750"
+        Path: "/exported"
+
+  # Security Group for EC2 Instances
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH and EFS access
+      VpcId: !Ref VPCId  # Replace with your VPC ID
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0  # Allow SSH from anywhere, adjust as necessary
+        - IpProtocol: tcp
+          FromPort: 2049
+          ToPort: 2049
+          CidrIp: 0.0.0.0/0  # Allow NFS access
+
+  # EC2 instance for Ubuntu
+  UbuntuInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: ami-0c55b159cbfafe1f0 # Replace with the latest Ubuntu AMI ID in your region
+      KeyName: your-key-pair # Replace with your key pair name
+      SecurityGroupIds:
+        - !Ref InstanceSecurityGroup
+
+  # EC2 instance for Red Hat 1
+  RedHatInstance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: ami-0a4c9a3ed5e2e0b3a # Replace with the latest Red Hat AMI ID in your region
+      KeyName: your-key-pair # Replace with your key pair name
+      SecurityGroupIds:
+        - !Ref InstanceSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          mkdir /mnt/efs
+          mount -t efs fs-xxxxxxxx:/ /mnt/efs # Replace with your EFS file system ID
+          echo "fs-xxxxxxxx:/ /mnt/efs efs defaults,_netdev 0 0" >> /etc/fstab
+
+  # EC2 instance for Red Hat 2
+  RedHatInstance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      ImageId: ami-0a4c9a3ed5e2e0b3a # Replace with the latest Red Hat AMI ID in your region
+      KeyName: your-key-pair # Replace with your key pair name
+      SecurityGroupIds:
+        - !Ref InstanceSecurityGroup
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          mkdir /mnt/efs
+          mount -t efs fs-xxxxxxxx:/ /mnt/efs # Replace with your EFS file system ID
+          echo "fs-xxxxxxxx:/ /mnt/efs efs defaults,_netdev 0 0" >> /etc/fstab
+
+Outputs:
+  UbuntuInstanceId:
+    Description: The Instance ID of the Ubuntu instance
+    Value: !Ref UbuntuInstance
+
+  RedHatInstance1Id:
+    Description: The Instance ID of the first Red Hat instance
+    Value: !Ref RedHatInstance1
+
+  RedHatInstance2Id:
+    Description: The Instance ID of the second Red Hat instance
+    Value: !Ref RedHatInstance2
+
+  EFSFileSystemId:
+    Description: The ID of the EFS
+    Value: !Ref MyEFS

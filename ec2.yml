@@ -1,0 +1,48 @@
+Parameters:
+  EC2InstanceType:
+    Type: String
+    Description: Select Instance Type
+    Default: t2.micro
+    AllowedValues: [t2.micro, t3.micro, t2.small]
+
+  KeyName:
+    Type: String
+    Default: cloudwatch logs
+    AllowedValues: [all, cloudwatch logs]
+
+Resources:
+  myInstance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: ami-063d43db0594b521b
+      KeyName: cloudwatch logs
+      SecurityGroup:
+        - sg-0513f7b0108994883
+      UserData:
+        Fn::Base64:
+          #!/bin/bash
+          sudo su
+          yum update -y
+          yum install -y httpd
+          service httpd start
+          chkconfig httpd on
+          echo "<h1>Hello from $(hostname -f)</h1>" >/var/www/html/index.html
+
+  myInstance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: ami-063d43db0594b521b
+      KeyName: cloudwatch logs
+      SecurityGroup:
+        - sg-0513f7b0108994883
+      UserData:
+        Fn::Base64:
+          #!/bin/bash
+          sudo su
+          yum update -y
+          yum install -y httpd
+          service httpd start
+          chkconfig httpd on
+          echo "<h1>Hello from $(hostname -f)</h1>" >/var/www/html/index.html

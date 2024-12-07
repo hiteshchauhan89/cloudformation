@@ -1,0 +1,309 @@
+Metadata:
+  License: Apache-2.0
+
+Parameters:
+    EC2InstanceType: 
+     Type: String
+     Description: Select Instance Type
+     Default: t2.micro
+     AllowedValues: [t2.micro,t3.micro,t2.small]
+
+Mappings:
+  Region2Examples:
+    us-east-1:
+      Examples: https://s3.amazonaws.com/cloudformation-examples-us-east-1
+    us-west-2:
+      Examples: https://s3-us-west-2.amazonaws.com/cloudformation-examples-us-west-2
+    us-west-1:
+      Examples: https://s3-us-west-1.amazonaws.com/cloudformation-examples-us-west-1
+    eu-west-1:
+      Examples: https://s3-eu-west-1.amazonaws.com/cloudformation-examples-eu-west-1
+    eu-central-1:
+      Examples: https://s3-eu-central-1.amazonaws.com/cloudformation-examples-eu-central-1
+    ap-southeast-1:
+      Examples: https://s3-ap-southeast-1.amazonaws.com/cloudformation-examples-ap-southeast-1
+    ap-northeast-1:
+      Examples: https://s3-ap-northeast-1.amazonaws.com/cloudformation-examples-ap-northeast-1
+    ap-northeast-2:
+      Examples: https://s3-ap-northeast-2.amazonaws.com/cloudformation-examples-ap-northeast-2
+    ap-southeast-2:
+      Examples: https://s3-ap-southeast-2.amazonaws.com/cloudformation-examples-ap-southeast-2
+    ap-south-1:
+      Examples: https://s3-ap-south-1.amazonaws.com/cloudformation-examples-ap-south-1
+    us-east-2:
+      Examples: https://s3-us-east-2.amazonaws.com/cloudformation-examples-us-east-2
+    sa-east-1:
+      Examples: https://s3-sa-east-1.amazonaws.com/cloudformation-examples-sa-east-1
+    cn-north-1:
+      Examples: https://s3.cn-north-1.amazonaws.com.cn/cloudformation-examples-cn-north-1
+
+AWSRegionArch2AMI:
+    us-east-1:
+      PV64: ami-2a69aa47
+      HVM64: ami-6869aa05
+      HVMG2: ami-50b4f047
+    us-west-2:
+      PV64: ami-7f77b31f
+      HVM64: ami-7172b611
+      HVMG2: ami-002bf460
+    us-west-1:
+      PV64: ami-a2490dc2
+      HVM64: ami-31490d51
+      HVMG2: ami-699ad409
+    eu-west-1:
+      PV64: ami-4cdd453f
+      HVM64: ami-f9dd458a
+      HVMG2: ami-f0e0a483
+    eu-central-1:
+      PV64: ami-6527cf0a
+      HVM64: ami-ea26ce85
+      HVMG2: ami-d9d62ab6
+    ap-northeast-1:
+      PV64: ami-3e42b65f
+      HVM64: ami-374db956
+      HVMG2: ami-78ba6619
+    ap-northeast-2:
+      PV64: NOT_SUPPORTED
+      HVM64: ami-2b408b45
+      HVMG2: NOT_SUPPORTED
+    ap-southeast-1:
+      PV64: ami-df9e4cbc
+      HVM64: ami-a59b49c6
+      HVMG2: ami-56e84c35
+    ap-southeast-2:
+      PV64: ami-63351d00
+      HVM64: ami-dc361ebf
+      HVMG2: ami-2589b946
+    ap-south-1:
+      PV64: NOT_SUPPORTED
+      HVM64: ami-ffbdd790
+      HVMG2: ami-f7354198
+    us-east-2:
+      PV64: NOT_SUPPORTED
+      HVM64: ami-f6035893
+      HVMG2: NOT_SUPPORTED
+    sa-east-1:
+      PV64: ami-1ad34676
+      HVM64: ami-6dd04501
+      HVMG2: NOT_SUPPORTED
+    cn-north-1:
+      PV64: ami-77559f1a
+      HVM64: ami-8e6aa0e3
+      HVMG2: NOT_SUPPORTED
+
+Resources:
+    myInstance: 
+      Type: AWS::EC2::Instance
+      Properties: 
+        InstanceType: t2.micro
+        ImageId: ami-063d43db0594b521b
+        KeyName: cloudwatch logs
+        SecurityGroupIds:
+          - sg-0513f7b0108994883
+        UserData:
+          Fn::Base64: 
+             #!/bin/bash
+             sudo su
+             yum update -y
+             yum install httpd
+             service httpd start
+             chkconfig httpd on
+             echo "<h1>Hello from $(hostname -f)</h1>" >/var/www/html/index.html
+    myInstance1: 
+       Type: AWS::EC2::Instance
+       Properties: 
+        InstanceType: t2.micro
+        ImageId: ami-063d43db0594b521b
+        KeyName: cloudwatch logs
+        SecurityGroupIds:
+          - sg-0513f7b0108994883
+        UserData:
+          Fn::Base64: 
+             #!/bin/bash
+             sudo su
+             yum update -y
+             yum install httpd
+             service httpd start
+             chkconfig httpd on
+             echo "<h1>Hello from $(hostname -f)</h1>" >/var/www/html/index.html
+
+    myInstance2: 
+      Type: AWS::EC2::Instance
+      Properties: 
+        InstanceType: t2.micro
+        ImageId: ami-063d43db0594b521b
+        KeyName: cloudwatch logs
+        SecurityGroupIds:
+          - sg-0513f7b0108994883
+        UserData:
+          Fn::Base64: 
+             #!/bin/bash
+             sudo su
+             yum update -y
+             yum install httpd
+             service httpd start
+             chkconfig httpd on
+             echo "<h1>Hello from $(hostname -f)</h1>" >/var/www/html/index.html
+Properties:            
+WebServerGroup:
+  CreationPolicy:
+    ResourceSignal:
+    Timeout: PT15M
+    UpdatePolicy:
+    AutoScalingRollingUpdate:
+    MinInstancesInService: 1
+    MaxBatchSize: 1
+    PauseTime: PT15M
+    WaitOnResourceSignals: true
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AvailabilityZones: !GetAZs
+      LaunchConfigurationName: !Ref LaunchConfig
+      MinSize: "2"
+      MaxSize: "2"
+      LoadBalancerNames:
+      - !Ref ElasticLoadBalancer
+
+LaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Metadata:
+      Comment: Install a simple application
+      AWS::CloudFormation::Init:
+        config:
+          packages:
+            yum:
+              httpd: []
+          files:
+            /var/www/html/index.html:
+              content: !Join
+                - ""
+                - - <img src="
+                  - !FindInMap
+                    - Region2Examples
+                    - !Ref AWS::Region
+                    - Examples
+                  - /cloudformation_graphic.png" alt="AWS CloudFormation Logo"/>
+                  - <h1>Congratulations, you have successfully launched the AWS CloudFormation sample.</h1>
+              mode: "000644"
+              owner: root
+              group: root
+            /etc/cfn/cfn-hup.conf:
+              content: !Join
+                - ""
+                - - '[main] '
+                  - stack=
+                  - !Ref AWS::StackId
+                  - ' '
+                  - region=
+                  - !Ref AWS::Region
+                  - ' '
+              mode: "000400"
+              owner: root
+              group: root
+            /etc/cfn/hooks.d/cfn-auto-reloader.conf:
+              content: !Join
+                - ""
+                - - '[cfn-auto-reloader-hook] '
+                  - 'triggers=post.update '
+                  - 'path=Resources.LaunchConfig.Metadata.AWS::CloudFormation::Init '
+                  - 'action=/opt/aws/bin/cfn-init -v '
+                  - '         --stack '
+                  - !Ref AWS::StackName
+                  - '         --resource LaunchConfig '
+                  - '         --region '
+                  - !Ref AWS::Region
+                  - ' '
+                  - 'runas=root '
+          services:
+            sysvinit:
+              httpd:
+                enabled: "true"
+                ensureRunning: "true"
+              cfn-hup:
+                enabled: "true"
+                ensureRunning: "true"
+                files:
+                  - /etc/cfn/cfn-hup.conf
+                  - /etc/cfn/hooks.d/cfn-auto-reloader.conf
+      ImageId: !FindInMap
+        - AWSRegionArch2AMI
+        - !Ref AWS::Region
+        - !FindInMap
+          - AWSInstanceType2Arch
+          - !Ref InstanceType
+          - Arch
+      SecurityGroups:
+        - !Ref InstanceSecurityGroup
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      UserData: !Base64
+        Fn::Join:
+          - ""
+          - - '#!/bin/bash -xe '
+            - 'yum update -y aws-cfn-bootstrap '
+            - '/opt/aws/bin/cfn-init -v '
+            - '         --stack '
+            - !Ref AWS::StackName
+            - '         --resource LaunchConfig '
+            - '         --region '
+            - !Ref AWS::Region
+            - ' '
+            - '/opt/aws/bin/cfn-signal -e $? '
+            - '         --stack '
+            - !Ref AWS::StackName
+            - '         --resource WebServerGroup '
+            - '         --region '
+            - !Ref AWS::Region
+            - ' '
+
+ElasticLoadBalancer:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      AvailabilityZones: !GetAZs
+      CrossZone: "true"
+      Listeners:
+        - LoadBalancerPort: "80"
+          InstancePort: "80"
+          Protocol: HTTP
+      HealthCheck:
+        Target: HTTP:80/
+        HealthyThreshold: "3"
+        UnhealthyThreshold: "5"
+        Interval: "30"
+        Timeout: "5"
+
+InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH access and HTTP access on the inbound port
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: "80"
+          ToPort: "80"
+          SourceSecurityGroupOwnerId: !GetAtt ElasticLoadBalancer.SourceSecurityGroup.OwnerAlias
+          SourceSecurityGroupName: !GetAtt ElasticLoadBalancer.SourceSecurityGroup.GroupName
+        - IpProtocol: tcp
+          FromPort: "22"
+          ToPort: "22"
+          CidrIp: !Ref SSHLocation
+
+Outputs:
+  URL:
+    Description: URL of the website
+    Value: !Join
+      - ""
+      - - http://
+        - !GetAtt ElasticLoadBalancer.DNSName
+     
+        
+
+
+
+
+ 
+
+  
+  
+
+
+   

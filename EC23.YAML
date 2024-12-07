@@ -1,0 +1,41 @@
+Parameters:
+    EC2InstanceType: 
+     Type: String
+     Description: Select Instance Type
+     Default: t2.micro
+     AllowedValues: [t2.micro,t3.micro,t2.small]
+
+#amazon instance
+Resources:
+  myInstance:
+     Type: 'AWS::EC2::Instance'
+     Properties: 
+        ImageId: ami-063d43db0594b521
+        InstanceType: t2.micro
+        KeyName: cloudwatch logs
+        SecurityGroupIds:
+          - sg-029680e590dac0c6a
+        UserData:
+          Fn::Base64: 
+             #!/bin/bash
+             yum update -y
+             service httpd start
+             chkconfig httpd on
+#ubuntu instance
+  newmyInstance:
+      Type: 'AWS::EC2::Instance'
+      Properties: 
+        ImageId: ami-0866a3c8686eaeeba
+        InstanceType: t2.micro
+        KeyName: cloudwatch logs
+        SecurityGroupIds:
+          - sg-029680e590dac0c6a
+        UserData:
+          Fn::Base64: 
+             #!/bin/bash
+             sudo apt-get update -y
+             sudo apt-get install apache2
+             sudo systemctl status apache2
+
+           
+

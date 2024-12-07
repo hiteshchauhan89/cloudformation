@@ -1,0 +1,82 @@
+Parameters:
+  EC2InstanceType:
+    Type: String
+    Description: Select Instance Type
+    Default: t2.micro
+    AllowedValues: [t2.micro, t3.micro, t2.small]
+
+  KeyName:
+    Type: String
+    Default: cloudwatch logs
+    AllowedValues: [all, cloudwatch logs]
+
+  ami:
+    Type: String
+    Default: ami-0866a3c8686eaeeba
+    #ami-063d43db0594b521b=amazon linux
+    #ami-0866a3c8686eaeeba=ubuntu
+    #ami-0583d8c7a9c35822=redhat
+    AllowedValues: [ami-063d43db0594b521b,ami-0866a3c8686eaeeba,ami-0583d8c7a9c35822c]
+
+  SecurityGroups:
+    Type: String
+    Default: sg-0513f7b0108994883
+    #sg-0513f7b0108994883=cloud watch logs
+    #sg-06d3789e40c704deb=ngnix sg
+    #sg-0a78f2e8d96bd70db=ubutnu-apacheserver
+    AllowedValues: [sg-0513f7b0108994883,sg-06d3789e40c704deb,sg-0a78f2e8d96bd70db]
+  
+Resources:
+  myInstance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: !Ref ami
+      KeyName: !Ref KeyName
+      SecurityGroup:
+        - !Ref SecurityGroups
+      UserData:
+        Fn::Base64:
+          #!/bin/bash
+          sudo su
+          yum update -y
+          yum install -y httpd
+          service httpd start
+          chkconfig httpd on
+          echo "<h1>Hello from $(hostname -f)</h1>" >/var/www/html/index.html
+
+  myInstance2:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: t2.micro
+      ImageId: !Ref ami
+      KeyName: !Ref KeyName
+      SecurityGroup:
+        - !Ref SecurityGroups
+      UserData:
+       Fn::Base64: 
+        "#!/bin/bash -x\n",
+        "export LC_CTYPE=en_US.UTF-8\n",
+        "export LC_ALL=en_US.UTF-8\n",
+        "apt-get update\n",
+        "apt-get install -y curl nfs-common\n",
+        "EC2_REGION=${AWS::Region}\n",
+        "DIR_TGT=/mnt/efs/\n",
+        "EFS_FILE_SYSTEM_ID=${EFSFileSystem}\n"
+        "mkdir -p $DIR_TGT\n",
+        "DIR_SRC=$EFS_FILE_SYSTEM_ID.efs.$EC2_REGION.amazonaws.com\n",
+        "mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 $DIR_SRC:/ $DIR_TGT\n"
+
+  EFSFileSystem:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      Encrypted: true
+      PerformanceMode: generalPurpose
+
+  EFSMountTarget1:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EFSFileSystem
+      SecurityGroups:
+        - !Ref SecurityGroups.GroupId
+      

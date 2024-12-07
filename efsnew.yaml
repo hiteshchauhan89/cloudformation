@@ -1,0 +1,99 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: CloudFormation Template for EC2 Instances and EFS
+
+Parameters:
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t2.micro
+    AllowedValues:
+      - t2.micro
+      - t2.small
+      - t2.medium
+    ConstraintDescription: Must be a valid EC2 instance type.
+
+  KeyName:
+     Type: String
+     Default: cloudwatch logs
+     AllowedValues: [all, cloudwatch logs]
+  
+  VpcId:
+    Description: VPC ID
+    Type: String
+    Default: vpc-0ca4bd13727b758cb
+ 
+Resources:
+  # Create the EFS
+  MyEFS:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      PerformanceMode: generalPurpose
+      Encrypted: true
+
+  MyEFSAccessPoint:
+    Type: AWS::EFS::AccessPoint
+    Properties:
+      FileSystemId: !Ref MyEFS
+      PosixUser:
+        Gid: "1000"
+        Uid: "1000"
+      RootDirectory:
+        CreationInfo:
+          OwnerGid: "1000"
+          OwnerUid: "1000"
+          Permissions: "750"
+        Path: "/exported"
+
+  # Security Group for EC2 Instances
+  InstanceSecurityGroup:
+   Type: AWS::EC2::SecurityGroup
+   Properties:
+    GroupDescription: Allow SSH and EFS access
+    VpcId: !Ref VpcId # Replace with your VPC ID
+    SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 22
+        ToPort: 22
+        CidrIp: 0.0.0.0/0 # Allow SSH from anywhere, adjust as necessary
+      - IpProtocol: tcp
+        FromPort: 2049
+        ToPort: 2049
+        CidrIp: 0.0.0.0/0 # Allow NFS access
+
+  # EC2 instance for Ubuntu
+  UbuntuInstance:
+   Type: AWS::EC2::Instance
+   Properties:
+    InstanceType: !Ref InstanceType
+    ImageId: ami-0866a3c8686eaeeba # Replace with the latest Ubuntu AMI ID in your region
+    KeyName: !Ref KeyName # Replace with your key pair name
+    SecurityGroupIds:
+      - !Ref InstanceSecurityGroup
+    UserData:
+      Fn::Base64: !Sub |
+        #!/bin/bash
+        sudo apt-get update
+        sudo apt-get install -y nfs-common
+        sudo mkdir /mnt/efs
+        sudo mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport $MOUNT_TARGET_IP:/ efs
+        sudo chmod 777 /mnt/efs
+        echo "Hello World from $(hostname -f)" > /mnt/efs/index.html
+
+  # EC2 instance for Red Hat 1
+  RedHatInstance:
+   Type: AWS::EC2::Instance
+   Properties:
+    InstanceType: !Ref InstanceType
+    ImageId: ami-0583d8c7a9c35822c # Replace with the latest Red Hat AMI ID in your region
+    KeyName: !Ref KeyName # Replace with your key pair name
+    SecurityGroupIds:
+      - !Ref InstanceSecurityGroup
+    UserData:
+      Fn::Base64: !Sub |
+        #!/bin/bash
+        sudo yum install nfs-utils -y
+        mkdir /mnt/efs
+        mount -t efs fs-0eaad30ce263f32c5:/ /mnt/efs # Replace with your EFS file system ID
+        echo "fs-0eaad30ce263f32c5:/ /mnt/efs efs defaults,_netdev 0 0" >> /etc/fstab
+
+

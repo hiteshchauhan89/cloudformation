@@ -1,0 +1,197 @@
+Parameters:
+  InstanceType:
+    Description: EC2 instance type
+    Type: String
+    Default: t2.micro
+    ConstraintDescription: must be a valid EC2 instance type.
+
+  KeyName:
+    Description: The EC2 Key Pair to allow SSH access to the instances
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+    Default: cloudwatch logs
+    AllowedValues:
+      - cloudwatch logs
+      - all
+
+  Subnets:
+    Description: 'The list of SubnetIds, for at least two Availability Zones in the
+      region in your Virtual Private Cloud (VPC) Defaults: '
+    Type: CommaDelimitedList
+    Default: us-east-1
+    AllowedValues:
+      - us-east-1
+      - ap-south-1
+
+  VPC:
+    Description: VPC ID for EC2 and Elastic Load Balancer
+    Type: AWS::EC2::VPC::Id
+
+  AMIID:
+    Default: ami-063d43db0594b521b=amazon
+    AllowedValues:
+      - ami-0866a3c8686eaeeba
+      - ami-0583d8c7a9c35822
+
+Resources:
+  EFSFileSystem:
+    Type: AWS::EFS::FileSystem
+    Properties:
+      Encrypted: true
+      PerformanceMode: generalPurpose
+
+  EFSMountTarget1:
+    Type: AWS::EFS::MountTarget
+    Properties:
+      FileSystemId: !Ref EFSFileSystem
+      SecurityGroups:
+        - !GetAtt EFSSecurityGroup.GroupId
+      SubnetId: !Select
+        - 0
+        - !Ref Subnets
+
+  CPUAlarmHigh:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmActions:
+        - !Ref ScaleUpPolicy
+      AlarmDescription: Scale-up if CPU > 90% for 10 minutes
+      ComparisonOperator: GreaterThanThreshold
+      Dimensions:
+        - Name: AutoScalingGroupName
+          Value: !Ref AutoScalingGroup
+      EvaluationPeriods: '2'
+      MetricName: CPUUtilization
+      Namespace: AWS/EC2
+      Period: '300'
+      Statistic: Average
+      Threshold: '90'
+
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      LaunchConfigurationName: !Ref LaunchConfig
+      LoadBalancerNames:
+        - !Ref ElasticLoadBalancer
+      MaxSize: '3'
+      MinSize: '2'
+      VPCZoneIdentifier: !Ref Subnets
+
+  ScaleDownPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      Cooldown: '60'
+      ScalingAdjustment: '-1'
+
+  ScaleUpPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Properties:
+      AdjustmentType: ChangeInCapacity
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      Cooldown: '60'
+      ScalingAdjustment: '1'
+
+  ElasticLoadBalancer:
+    Type: AWS::ElasticLoadBalancing::LoadBalancer
+    Properties:
+      SecurityGroups:
+        - !Ref ELBSecurityGroup
+      Subnets: !Ref Subnets
+      CrossZone: 'true'
+      HealthCheck:
+        HealthyThreshold: '3'
+        Interval: '30'
+        Target: !Join
+          - ''
+          - - 'HTTP:'
+            - '80'
+            - /
+        Timeout: '5'
+        UnhealthyThreshold: '5'
+      Listeners:
+        - InstancePort: '80'
+          LoadBalancerPort: '80'
+          Protocol: HTTP
+
+  InstanceSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable SSH public access and HTTP from the load balancer only
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: '22'
+          IpProtocol: tcp
+          ToPort: '22'
+        - FromPort: '80'
+          IpProtocol: tcp
+          SourceSecurityGroupId: !GetAtt ELBSecurityGroup.GroupId
+          ToPort: '80'
+      VpcId: !Ref VPC
+
+  ELBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable public access HTTP and HTTPS
+      SecurityGroupIngress:
+        - CidrIp: 0.0.0.0/0
+          FromPort: '80'
+          IpProtocol: tcp
+          ToPort: '80'
+        - CidrIp: 0.0.0.0/0
+          FromPort: '443'
+          IpProtocol: tcp
+          ToPort: '443'
+      VpcId: !Ref VPC
+
+  EFSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Enable NFS access from EC2
+      SecurityGroupIngress:
+        - FromPort: '2049'
+          IpProtocol: tcp
+          ToPort: '2049'
+          SourceSecurityGroupId: !GetAtt InstanceSecurityGroup.GroupId
+      VpcId: !Ref VPC
+
+  LaunchConfig:
+    Type: AWS::AutoScaling::LaunchConfiguration
+    Properties:
+      ImageId: !Ref AMIID
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      SecurityGroups:
+        - !GetAtt InstanceSecurityGroup.GroupId
+      UserData: !Base64
+        Fn::Sub: |-
+          "#!/bin/bash -x\n",
+          "export LC_CTYPE=en_US.UTF-8\n",
+          "export LC_ALL=en_US.UTF-8\n",
+          "apt-get update\n",
+          "apt-get install -y curl nfs-common\n",
+          "EC2_REGION=${AWS::Region}\n",
+          "DIR_TGT=/mnt/efs/\n",
+          "EFS_FILE_SYSTEM_ID=${EFSFileSystem}\n"
+          "mkdir -p $DIR_TGT\n",
+          "DIR_SRC=$EFS_FILE_SYSTEM_ID.efs.$EC2_REGION.amazonaws.com\n",
+          "mount -t nfs4 -o nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2 $DIR_SRC:/ $DIR_TGT\n"
+
+Outputs:
+  AutoScalingGroup:
+    Description: AutoScaling Group Name
+    Value: !Ref AutoScalingGroup
+    Export:
+      Name: !Sub ${AWS::StackName}-AutoScalingGroup
+
+  StackName:
+    Description: Stack Name
+    Value: !Ref AWS::StackName
+
+  URL:
+    Description: The URL of the website
+    Value: !Join
+      - ''
+      - - http://
+        - !GetAtt ElasticLoadBalancer.DNSName
